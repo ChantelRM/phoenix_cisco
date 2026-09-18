@@ -1,10 +1,12 @@
 :root {
-  --maroon: #3D0F14;
-  --burgundy: #7B2D3E;
-  --tan: #C99B7A;
-  --cream: #F3E9D8;
+  --yellow: #FFC300;
+  --black: #141414;
+  --cream: #FBF6EC;
   --white: #FFFFFF;
-  --text-muted: #8A7860;
+  --tan: #4F4F49;        /* darker muted tone - "important" priority label */
+  --text-muted: #8A8A82; /* lighter muted tone - helper text, "optional" priority */
+  --maroon: var(--black);    /* legacy name, kept so nothing breaks - now black */
+  --burgundy: var(--black);  /* legacy name, kept so nothing breaks - now black */
   --radius: 8px;
 }
 
@@ -34,21 +36,21 @@ body {
 }
 
 .card-accent {
-  background: var(--burgundy);
-  color: var(--cream);
+  background: var(--black);
+  color: var(--yellow);
   border-radius: var(--radius);
   padding: 12px 14px;
   margin-bottom: 8px;
 }
 
 .btn-primary {
-  background: var(--burgundy);
-  color: var(--cream);
+  background: var(--yellow);
+  color: var(--black);
   border: none;
   border-radius: var(--radius);
   padding: 12px;
   font-size: 14px;
-  font-weight: 600;
+  font-weight: 700;
   width: 100%;
   cursor: pointer;
 }
@@ -71,8 +73,8 @@ input, select {
   margin: 0 0 4px;
 }
 
-.priority-essential { color: var(--burgundy); }
-.priority-important { color: #9C7A4E; }
+.priority-essential { color: var(--black); font-weight: 700; }
+.priority-important { color: var(--tan); font-weight: 600; }
 .priority-optional { color: var(--text-muted); }
 
 nav.bottom-nav {
@@ -82,7 +84,7 @@ nav.bottom-nav {
   justify-content: space-around;
   background: var(--white);
   padding: 10px 0;
-  border-top: 1px solid #eee1cc;
+  border-top: 1px solid rgba(20,20,20,0.08);
 }
 
 nav.bottom-nav a {
@@ -92,4 +94,10 @@ nav.bottom-nav a {
   text-align: center;
 }
 
-nav.bottom-nav a.active { color: var(--burgundy); font-weight: 600; }
+nav.bottom-nav a.active {
+  color: var(--black);
+  font-weight: 600;
+  border-top: 2px solid var(--yellow);
+  padding-top: 2px;
+  margin-top: -2px;
+}

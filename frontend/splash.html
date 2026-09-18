@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>KiloWhat</title>
+<link rel="manifest" href="manifest.json">
+<style>
+  :root{
+    --fill: 0%; /* JS updates this each frame */
+  }
+  html,body{
+    margin:0; height:100%; background:#000;
+    font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  }
+  #splash{
+    position:fixed; inset:0; background:#000;
+    display:flex; flex-direction:column; align-items:center; justify-content:center;
+    gap:32px;
+    transition: opacity .6s ease;
+  }
+  #splash.hide{ opacity:0; pointer-events:none; }
+
+  .bulb-wrap{
+    position:relative; width:120px; height:170px;
+  }
+  .bulb-wrap svg{ position:absolute; top:0; left:0; width:100%; height:100%; }
+
+  .title-wrap{
+    position:relative; display:inline-block;
+  }
+  .app-title{
+    font-size:28px; font-weight:700; letter-spacing:.02em;
+    margin:0; white-space:nowrap;
+  }
+  .app-title.base{
+    color:#ffffff;
+  }
+  .app-title.fill{
+    position:absolute; top:0; left:0; color:#FFC300;
+    text-shadow: 0 0 14px rgba(255,195,0,.5);
+    clip-path: inset(0 100% 0 0); /* fully hidden — nothing filled yet */
+    transition: clip-path .6s linear;
+  }
+  .app-title.fill.lit{
+    clip-path: inset(0 0 0 0); /* fully revealed left-to-right over the transition */
+  }
+
+  /* Outline bulb - always visible, hollow */
+  .bulb-outline path{
+    fill:none;
+    stroke:#3a3a3a;
+    stroke-width:3;
+  }
+
+  /* Filled bulb - yellow, but revealed bottom-up by a clip-path driven by --fill */
+  .bulb-fill{
+    clip-path: inset(calc(100% - var(--fill)) 0 0 0);
+    transition: clip-path .05s linear; /* smooths the per-frame jump */
+    filter: drop-shadow(0 0 12px rgba(255,195,0,.55));
+  }
+  .bulb-fill path{
+    fill:#FFC300;
+    stroke:#FFC300;
+    stroke-width:3;
+  }
+
+  .percent{
+    color:#666; font-size:13px; letter-spacing:.05em;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .facts-label{
+    color:#FFC300; font-size:14px; font-weight:600;
+    margin:0 0 6px 0; letter-spacing:.03em;
+  }
+  .facts{
+    max-width:280px; text-align:center; min-height:54px;
+    color:#bdbdbd; font-size:14px; line-height:1.5;
+    padding:0 20px;
+  }
+  .facts span{
+    display:block; opacity:0; transition:opacity .4s ease;
+  }
+  .facts span.show{ opacity:1; }
+</style>
+</head>
+<body>
+
+<div id="splash">
+  <div class="title-wrap">
+    <h1 class="app-title base">KiloWhat?</h1>
+    <h1 class="app-title fill" id="titleFill">KiloWhat?</h1>
+  </div>
+  <div class="bulb-wrap">
+    <!-- Hollow outline bulb -->
+    <svg class="bulb-outline" viewBox="0 0 120 170">
+      <path d="M60 8
+               C30 8 12 28 12 56
+               C12 76 22 88 34 98
+               C40 103 42 108 42 116
+               L42 132
+               L78 132
+               L78 116
+               C78 108 80 103 86 98
+               C98 88 108 76 108 56
+               C108 28 90 8 60 8 Z" />
+      <rect x="46" y="140" width="28" height="10" rx="2" fill="none" stroke="#3a3a3a" stroke-width="3"/>
+      <rect x="50" y="154" width="20" height="8" rx="2" fill="none" stroke="#3a3a3a" stroke-width="3"/>
+    </svg>
+
+    <!-- Yellow fill bulb, clipped bottom-up -->
+    <svg class="bulb-fill" viewBox="0 0 120 170">
+      <path d="M60 8
+               C30 8 12 28 12 56
+               C12 76 22 88 34 98
+               C40 103 42 108 42 116
+               L42 132
+               L78 132
+               L78 116
+               C78 108 80 103 86 98
+               C98 88 108 76 108 56
+               C108 28 90 8 60 8 Z" />
+      <rect x="46" y="140" width="28" height="10" rx="2"/>
+      <rect x="50" y="154" width="20" height="8" rx="2"/>
+    </svg>
+  </div>
+
+  <div class="percent" id="percent">0%</div>
+
+  <div class="facts">
+    <p class="facts-label">Did you know?</p>
+    <span class="show" id="fact">Turning off lights in rooms you're not using can meaningfully cut your electricity usage.</span>
+  </div>
+</div>
+
+<script>
+  // ---- 1. Rotating energy/water facts ----
+  const facts = [
+    "Turning off lights in rooms you're not using can meaningfully cut your electricity usage.",
+    "Turn off your geyser when you don't need it — it's often the single biggest electricity user in a home.",
+    "A dripping tap can waste over 15 litres of water a day — fixing leaks quickly saves more than you'd think.",
+    "In areas with shared taps or tank storage, filling a covered container ahead of scheduled outages helps avoid running short.",
+    "Reusing bath or basin water for flushing toilets or watering plants is a simple way to stretch limited water supply.",
+    "Reporting burst pipes or open communal taps to your local municipality can save an entire neighbourhood's water supply."
+  ];
+  let factIndex = 0;
+  const factEl = document.getElementById('fact');
+
+  function rotateFacts(){
+    if (currentPct >= 100) return; // don't change the tip once the bulb is full
+    factEl.classList.remove('show');
+    setTimeout(() => {
+      factIndex = (factIndex + 1) % facts.length;
+      factEl.textContent = facts[factIndex];
+      factEl.classList.add('show');
+    }, 400); // matches CSS transition duration
+  }
+  const factInterval_MS = 5000; // 5 seconds per tip
+  let factInterval = setInterval(rotateFacts, factInterval_MS);
+
+  // ---- 2. Bulb fill + title sweep animation ----
+  const splash = document.getElementById('splash');
+  const bulbFill = document.querySelector('.bulb-fill');
+  const percentEl = document.getElementById('percent');
+  const titleFill = document.getElementById('titleFill');
+
+  const DURATION = 1500;      // ms — bulb fill
+  const TITLE_FILL_MS = 600;  // ms — must match the .app-title.fill clip-path transition above
+  let startTime = null;
+  let rafId = null;
+  let currentPct = 0;
+
+  function animateFill(now){
+    if (!startTime) startTime = now;
+    const elapsed = now - startTime;
+    const progress = Math.min(elapsed / DURATION, 1); // 0 → 1
+    const pct = Math.floor(progress * 100);
+
+    bulbFill.style.setProperty('--fill', pct + '%');
+    percentEl.textContent = pct + '%';
+    currentPct = pct;
+    if (pct >= 100) {
+      titleFill.classList.add('lit');
+    }
+
+    if (progress < 1) {
+      rafId = requestAnimationFrame(animateFill);
+    } else {
+      setTimeout(finishLoading, TITLE_FILL_MS); // wait for the title's fill sweep to finish
+    }
+  }
+
+  // ---- 3. Hand off to the real app ----
+  function finishLoading(){
+    clearInterval(factInterval);
+    splash.classList.add('hide');
+    setTimeout(() => {
+      // Already logged in (userId cached from a previous session)? Skip
+      // straight to the dashboard instead of making them log in again.
+      const loggedIn = localStorage.getItem('kw-user-id');
+      window.location.href = loggedIn ? 'dashboard.html' : 'index.html';
+    }, 600); // matches splash fade-out transition
+  }
+
+  rafId = requestAnimationFrame(animateFill);
+</script>
+
+</body>
+</html>

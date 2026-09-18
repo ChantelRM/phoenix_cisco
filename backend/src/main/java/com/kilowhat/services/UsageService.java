@@ -18,15 +18,20 @@ public class UsageService {
         try (Connection conn = Database.getConnection()) {
             String sql = """
                 INSERT INTO daily_usage (user_id, usage_date, kwh) VALUES (?, ?, ?)
-                ON CONFLICT (user_id, usage_date) DO UPDATE SET kwh = ?
-                RETURNING id
+                ON CONFLICT (user_id, usage_date) DO UPDATE SET kwh = excluded.kwh
                 """;
-            int id;
             try (PreparedStatement ps = conn.prepareStatement(sql)) {
                 ps.setInt(1, userId);
-                ps.setDate(2, Date.valueOf(date));
+                ps.setString(2, date);
                 ps.setDouble(3, kwh);
-                ps.setDouble(4, kwh);
+                ps.executeUpdate();
+            }
+
+            int id;
+            try (PreparedStatement ps = conn.prepareStatement(
+                    "SELECT id FROM daily_usage WHERE user_id = ? AND usage_date = ?")) {
+                ps.setInt(1, userId);
+                ps.setString(2, date);
                 ResultSet rs = ps.executeQuery();
                 rs.next();
                 id = rs.getInt("id");
@@ -47,8 +52,8 @@ public class UsageService {
     private void checkUsageSpike(Connection conn, int userId, double todayKwh) throws SQLException {
         String sql = """
             SELECT AVG(kwh) AS avg_kwh FROM daily_usage
-            WHERE user_id = ? AND usage_date >= CURRENT_DATE - INTERVAL '7 days'
-              AND usage_date < CURRENT_DATE
+            WHERE user_id = ? AND usage_date >= date('now', '-7 days')
+              AND usage_date < date('now')
             """;
         try (PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setInt(1, userId);
@@ -57,7 +62,7 @@ public class UsageService {
                 double avg = rs.getDouble("avg_kwh");
                 if (avg > 0 && todayKwh > avg * 1.2) {
                     int percentOver = (int) Math.round(((todayKwh - avg) / avg) * 100);
-                    notifications.create(userId,
+                    notifications.create(conn, userId,
                         "Today's usage is " + percentOver + "% higher than your weekly average.");
                 }
             }
@@ -74,7 +79,7 @@ public class UsageService {
                 while (rs.next()) {
                     DailyUsage d = new DailyUsage();
                     d.id = rs.getInt("id");
-                    d.date = rs.getDate("usage_date").toString();
+                    d.date = rs.getString("usage_date");
                     d.kwh = rs.getDouble("kwh");
                     list.add(d);
                 }
@@ -85,19 +90,21 @@ public class UsageService {
 
     public Purchase recordPurchase(int userId, double amountRand, double unitsKwh, String date) throws SQLException {
         try (Connection conn = Database.getConnection()) {
-            String sql = "INSERT INTO purchase (user_id, amount_rand, units_kwh, purchase_date) VALUES (?, ?, ?, ?) RETURNING id";
+            String sql = "INSERT INTO purchase (user_id, amount_rand, units_kwh, purchase_date) VALUES (?, ?, ?, ?)";
             int id;
-            try (PreparedStatement ps = conn.prepareStatement(sql)) {
+            try (PreparedStatement ps = conn.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
                 ps.setInt(1, userId);
                 ps.setDouble(2, amountRand);
                 ps.setDouble(3, unitsKwh);
-                ps.setDate(4, Date.valueOf(date));
-                ResultSet rs = ps.executeQuery();
-                rs.next();
-                id = rs.getInt("id");
+                ps.setString(4, date);
+                ps.executeUpdate();
+                try (ResultSet keys = ps.getGeneratedKeys()) {
+                    keys.next();
+                    id = keys.getInt(1);
+                }
             }
 
-            notifications.create(userId,
+            notifications.create(conn, userId,
                 "Purchase recorded: R" + amountRand + " for " + unitsKwh + " kWh.");
 
             Purchase p = new Purchase();
@@ -121,7 +128,7 @@ public class UsageService {
                     p.id = rs.getInt("id");
                     p.amountRand = rs.getDouble("amount_rand");
                     p.unitsKwh = rs.getDouble("units_kwh");
-                    p.date = rs.getDate("purchase_date").toString();
+                    p.date = rs.getString("purchase_date");
                     list.add(p);
                 }
             }
@@ -135,15 +142,15 @@ public class UsageService {
     public Map<String, Object> getSummary(int userId) throws SQLException {
         try (Connection conn = Database.getConnection()) {
             double purchasedThisMonth = sumSince(conn,
-                "SELECT COALESCE(SUM(units_kwh),0) AS total FROM purchase WHERE user_id = ? AND date_trunc('month', purchase_date) = date_trunc('month', CURRENT_DATE)",
+                "SELECT COALESCE(SUM(units_kwh),0) AS total FROM purchase WHERE user_id = ? AND strftime('%Y-%m', purchase_date) = strftime('%Y-%m', 'now')",
                 userId);
 
             double consumedThisMonth = sumSince(conn,
-                "SELECT COALESCE(SUM(kwh),0) AS total FROM daily_usage WHERE user_id = ? AND date_trunc('month', usage_date) = date_trunc('month', CURRENT_DATE)",
+                "SELECT COALESCE(SUM(kwh),0) AS total FROM daily_usage WHERE user_id = ? AND strftime('%Y-%m', usage_date) = strftime('%Y-%m', 'now')",
                 userId);
 
             double consumedLastMonth = sumSince(conn,
-                "SELECT COALESCE(SUM(kwh),0) AS total FROM daily_usage WHERE user_id = ? AND date_trunc('month', usage_date) = date_trunc('month', CURRENT_DATE - INTERVAL '1 month')",
+                "SELECT COALESCE(SUM(kwh),0) AS total FROM daily_usage WHERE user_id = ? AND strftime('%Y-%m', usage_date) = strftime('%Y-%m', date('now', '-1 month'))",
                 userId);
 
             int dayOfMonth = java.time.LocalDate.now().getDayOfMonth();

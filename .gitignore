@@ -1,0 +1,12 @@
+# Maven build output
+backend/target/
+
+# SQLite database + WAL/SHM files (created at runtime, not source)
+backend/*.db
+backend/*.db-wal
+backend/*.db-shm
+
+# IDE
+.idea/
+*.iml
+.vscode/

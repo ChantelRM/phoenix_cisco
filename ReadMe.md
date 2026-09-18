@@ -56,10 +56,13 @@ IF days_remaining <= threshold:
 tip = lookup_tip(user.area_climate_zone, current_season, top_usage_appliance)
 ```
 ## Running locally
-1. `docker compose up -d` (starts Postgres and loads schema.sql)
-2. `cd backend && mvn compile exec:java` (set `ESP_API_KEY` env var for
-   the outages feature to work - free key at sepush.co.za)
-3. Open `frontend/splash.html` (loading splash → routes to login or
+1. `cd backend && mvn compile exec:java` (set `ESP_API_KEY` env var for
+   the outages feature to work - free key at sepush.co.za). No separate
+   database server or password needed - the backend runs on embedded
+   SQLite (`backend/kilowhat.db`, created and migrated automatically on
+   first run). The old `docker compose up -d` / Postgres step is no
+   longer required.
+2. Open `frontend/splash.html` (loading splash → routes to login or
    dashboard automatically) — or jump straight to `frontend/index.html`
    (login) / `frontend/register.html` — in a browser, or serve the
    folder with any static server

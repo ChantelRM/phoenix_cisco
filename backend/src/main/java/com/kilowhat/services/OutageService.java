@@ -46,35 +46,49 @@ public class OutageService {
     private void writeCache(Connection conn, String areaId, String json) throws SQLException {
         String sql = """
             INSERT INTO outage_cache (area_id, schedule_json, fetched_at)
-            VALUES (?, ?, now())
-            ON CONFLICT (area_id) DO UPDATE SET schedule_json = ?, fetched_at = now()
+            VALUES (?, ?, CURRENT_TIMESTAMP)
+            ON CONFLICT (area_id) DO UPDATE SET schedule_json = excluded.schedule_json, fetched_at = CURRENT_TIMESTAMP
             """;
         try (PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setString(1, areaId);
             ps.setString(2, json);
-            ps.setString(3, json);
             ps.executeUpdate();
         }
     }
 
     public ManualOutage report(int userId) throws SQLException {
         try (Connection conn = Database.getConnection()) {
-            String sql = "INSERT INTO manual_outage (user_id, started_at) VALUES (?, now()) RETURNING id, started_at";
-            try (PreparedStatement ps = conn.prepareStatement(sql)) {
+            int id;
+            try (PreparedStatement ps = conn.prepareStatement(
+                    "INSERT INTO manual_outage (user_id, started_at) VALUES (?, CURRENT_TIMESTAMP)",
+                    Statement.RETURN_GENERATED_KEYS)) {
                 ps.setInt(1, userId);
+                ps.executeUpdate();
+                try (ResultSet keys = ps.getGeneratedKeys()) {
+                    keys.next();
+                    id = keys.getInt(1);
+                }
+            }
+
+            String startedAt;
+            try (PreparedStatement ps = conn.prepareStatement(
+                    "SELECT started_at FROM manual_outage WHERE id = ?")) {
+                ps.setInt(1, id);
                 ResultSet rs = ps.executeQuery();
                 rs.next();
-                ManualOutage o = new ManualOutage();
-                o.id = rs.getInt("id");
-                o.startedAt = rs.getTimestamp("started_at").toString();
-                return o;
+                startedAt = rs.getString("started_at");
             }
+
+            ManualOutage o = new ManualOutage();
+            o.id = id;
+            o.startedAt = startedAt;
+            return o;
         }
     }
 
     public void markRestored(int userId, int outageId) throws SQLException {
         try (Connection conn = Database.getConnection()) {
-            String sql = "UPDATE manual_outage SET restored_at = now() WHERE id = ? AND user_id = ?";
+            String sql = "UPDATE manual_outage SET restored_at = CURRENT_TIMESTAMP WHERE id = ? AND user_id = ?";
             try (PreparedStatement ps = conn.prepareStatement(sql)) {
                 ps.setInt(1, outageId);
                 ps.setInt(2, userId);
@@ -93,9 +107,8 @@ public class OutageService {
                 while (rs.next()) {
                     ManualOutage o = new ManualOutage();
                     o.id = rs.getInt("id");
-                    o.startedAt = rs.getTimestamp("started_at").toString();
-                    Timestamp restored = rs.getTimestamp("restored_at");
-                    o.restoredAt = restored != null ? restored.toString() : null;
+                    o.startedAt = rs.getString("started_at");
+                    o.restoredAt = rs.getString("restored_at");
                     list.add(o);
                 }
             }

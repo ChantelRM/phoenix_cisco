@@ -11,12 +11,20 @@ public class NotificationService {
 
     public void create(int userId, String message) throws SQLException {
         try (Connection conn = Database.getConnection()) {
-            String sql = "INSERT INTO notification (user_id, message) VALUES (?, ?)";
-            try (PreparedStatement ps = conn.prepareStatement(sql)) {
-                ps.setInt(1, userId);
-                ps.setString(2, message);
-                ps.executeUpdate();
-            }
+            create(conn, userId, message);
+        }
+    }
+
+    // Overload for callers that already hold an open connection (e.g. mid
+    // way through recording usage/a purchase) - reuses it instead of
+    // opening a second connection to the same SQLite file, which can
+    // otherwise contend with the first for the write lock.
+    public void create(Connection conn, int userId, String message) throws SQLException {
+        String sql = "INSERT INTO notification (user_id, message) VALUES (?, ?)";
+        try (PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setInt(1, userId);
+            ps.setString(2, message);
+            ps.executeUpdate();
         }
     }
 
@@ -34,7 +42,7 @@ public class NotificationService {
                     Notification n = new Notification();
                     n.id = rs.getInt("id");
                     n.message = rs.getString("message");
-                    n.createdAt = rs.getTimestamp("created_at").toString();
+                    n.createdAt = rs.getString("created_at");
                     n.read = rs.getBoolean("read");
                     list.add(n);
                 }

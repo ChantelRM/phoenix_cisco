@@ -6,6 +6,8 @@ import io.javalin.http.HttpStatus;
 
 public class App {
     public static void main(String[] args) {
+        com.kilowhat.db.Database.initSchema();
+
         Javalin app = Javalin.create(config -> {
             // Lets the frontend (opened as a plain file or a different port)
             // call this API during development.

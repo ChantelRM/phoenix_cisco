@@ -16,14 +16,16 @@ public class UserService {
             conn.setAutoCommit(false);
             try {
                 int userId;
-                String insertUser = "INSERT INTO users (username, area_id, household_size) VALUES (?, ?, ?) RETURNING id";
-                try (PreparedStatement ps = conn.prepareStatement(insertUser)) {
+                String insertUser = "INSERT INTO users (username, area_id, household_size) VALUES (?, ?, ?)";
+                try (PreparedStatement ps = conn.prepareStatement(insertUser, Statement.RETURN_GENERATED_KEYS)) {
                     ps.setString(1, username);
                     ps.setString(2, areaId);
                     ps.setInt(3, householdSize);
-                    ResultSet rs = ps.executeQuery();
-                    rs.next();
-                    userId = rs.getInt("id");
+                    ps.executeUpdate();
+                    try (ResultSet keys = ps.getGeneratedKeys()) {
+                        keys.next();
+                        userId = keys.getInt(1);
+                    }
                 }
 
                 String insertCategory = "INSERT INTO appliance_category (user_id, category, count) VALUES (?, ?, ?)";

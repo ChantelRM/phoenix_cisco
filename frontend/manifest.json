@@ -1,7 +1,7 @@
 {
   "name": "KiloWhat",
   "short_name": "KiloWhat",
-  "start_url": "/splash.html",
+  "start_url": "/index.html",
   "display": "standalone",
   "background_color": "#F3E9D8",
   "theme_color": "#3D0F14",

@@ -44,7 +44,7 @@
         const user = await Api.me();
         document.getElementById("greeting").textContent = `Hi, ${user.username}`;
       } catch (err) {
-        window.location.href = "index.html"; // not logged in
+        window.location.href = "login.html"; // not logged in
         return;
       }
 

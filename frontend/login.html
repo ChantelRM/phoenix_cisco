@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>KiloWhat - Log in</title>
+  <link rel="manifest" href="manifest.json">
+  <link rel="stylesheet" href="css/theme.css">
+</head>
+<body>
+  <div class="page" style="padding-top:60px;">
+    <h1 style="text-align:center; font-size:20px;">KiloWhat</h1>
+
+    <form id="login-form">
+      <p class="label-muted">Username</p>
+      <input type="text" id="username" required>
+      <button type="submit" class="btn-primary">Log in</button>
+    </form>
+    <p style="text-align:center; font-size:12px; margin-top:12px;">
+      New here? <a href="register.html" style="color:var(--burgundy);">Register</a>
+    </p>
+    <p id="error" style="color:var(--burgundy); font-size:12px; text-align:center;"></p>
+  </div>
+
+  <script src="js/api.js"></script>
+  <script>
+    document.getElementById("login-form").addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const username = document.getElementById("username").value;
+      try {
+        await Api.login(username);
+        window.location.href = "dashboard.html";
+      } catch (err) {
+        document.getElementById("error").textContent = "No account with that username - register first.";
+      }
+    });
+  </script>
+</body>
+</html>

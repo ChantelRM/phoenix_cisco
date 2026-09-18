@@ -62,9 +62,9 @@ tip = lookup_tip(user.area_climate_zone, current_season, top_usage_appliance)
    SQLite (`backend/kilowhat.db`, created and migrated automatically on
    first run). The old `docker compose up -d` / Postgres step is no
    longer required.
-2. Open `frontend/splash.html` (loading splash → routes to login or
-   dashboard automatically) — or jump straight to `frontend/index.html`
-   (login) / `frontend/register.html` — in a browser, or serve the
+2. Open `frontend/index.html` (loading splash → routes to login or
+   dashboard automatically) — or jump straight to `frontend/login.html`
+   / `frontend/register.html` — in a browser, or serve the
    folder with any static server
 
 ## Team & Roles

@@ -1,8 +1,8 @@
 const CACHE_NAME = "kilowhat-v1";
 
 const APP_SHELL = [
-  "/splash.html",
   "/index.html",
+  "/login.html",
   "/register.html",
   "/dashboard.html",
   "/purchases.html",

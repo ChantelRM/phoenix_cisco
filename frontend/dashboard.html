@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>KiloWhat - Dashboard</title>
+  <link rel="manifest" href="manifest.json">
+  <link rel="stylesheet" href="css/theme.css">
+</head>
+<body>
+  <div class="page">
+    <p class="label-muted" id="greeting">Loading...</p>
+
+    <div class="card-accent">
+      <p class="label-muted" style="color:var(--tan);">Estimated backup runtime</p>
+      <p id="runtime" style="font-size:18px; font-weight:600; margin:2px 0 0;">Loading...</p>
+    </div>
+
+    <div class="card">
+      <p class="label-muted">This month</p>
+      <p id="usage-summary" style="margin:2px 0 0; font-size:13px;">Loading...</p>
+    </div>
+
+    <div class="card">
+      <p class="label-muted">Log today's usage (kWh)</p>
+      <form id="usage-form" style="display:flex; gap:8px;">
+        <input type="number" step="0.1" id="kwh-input" style="margin:0;" required>
+        <button type="submit" class="btn-primary" style="width:auto; padding:10px 16px; margin:0;">Save</button>
+      </form>
+    </div>
+  </div>
+
+  <nav class="bottom-nav">
+    <a href="dashboard.html" class="active">Home</a>
+    <a href="purchases.html">Purchases</a>
+    <a href="outages.html">Outages</a>
+  </nav>
+
+  <script src="js/api.js"></script>
+  <script src="js/popup.js"></script>
+  <script>
+    async function loadDashboard() {
+      try {
+        const user = await Api.me();
+        document.getElementById("greeting").textContent = `Hi, ${user.username}`;
+      } catch (err) {
+        window.location.href = "index.html"; // not logged in
+        return;
+      }
+
+      try {
+        const backup = await Api.getBackupEstimate();
+        document.getElementById("runtime").textContent =
+          `${Math.floor(backup.runtimeMinutes / 60)}h ${backup.runtimeMinutes % 60}m at ~${backup.estimatedLoadWatts}W estimated load`;
+      } catch (err) {
+        document.getElementById("runtime").textContent = "Could not load - is the backend running?";
+      }
+
+      try {
+        const summary = await Api.getUsageSummary();
+        document.getElementById("usage-summary").textContent =
+          `Purchased ${summary.purchasedKwh} kWh · consumed ${summary.consumedKwh} kWh · avg ${summary.avgPerDay} kWh/day · trend ${summary.trendPercent}%`;
+      } catch (err) {
+        document.getElementById("usage-summary").textContent = "Could not load usage summary.";
+      }
+    }
+
+    document.getElementById("usage-form").addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const today = new Date().toISOString().slice(0, 10);
+      const kwh = parseFloat(document.getElementById("kwh-input").value);
+      try {
+        await Api.recordDailyUsage(today, kwh);
+        e.target.reset();
+        loadDashboard();
+        checkNotifications(); // pick up the spike pop-up immediately if triggered
+      } catch (err) {
+        alert("Could not save - is the backend running?");
+      }
+    });
+
+    loadDashboard();
+    startNotificationPolling();
+  </script>
+</body>
+</html>

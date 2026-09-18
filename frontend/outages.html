@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>KiloWhat - Outages</title>
+  <link rel="manifest" href="manifest.json">
+  <link rel="stylesheet" href="css/theme.css">
+</head>
+<body>
+  <div class="page">
+    <div style="display:flex; justify-content:space-between; align-items:center;">
+      <h1 style="font-size:18px;">Outages</h1>
+      <button class="btn-primary" style="width:auto; padding:8px 14px;" id="report-btn">Report now</button>
+    </div>
+
+    <p class="label-muted" style="margin-top:12px;">Scheduled</p>
+    <div id="scheduled-list"></div>
+
+    <p class="label-muted" style="margin-top:12px;">Reported by you</p>
+    <div id="manual-list"></div>
+  </div>
+
+  <nav class="bottom-nav">
+    <a href="dashboard.html">Home</a>
+    <a href="purchases.html">Purchases</a>
+    <a href="outages.html" class="active">Outages</a>
+  </nav>
+
+  <script src="js/api.js"></script>
+  <script>
+    async function loadScheduled() {
+      const el = document.getElementById("scheduled-list");
+      try {
+        const user = await Api.me();
+        const data = await Api.getScheduledOutages(user.areaId);
+        el.innerHTML = `<div class="card" style="font-size:13px;">${JSON.stringify(data).slice(0, 120)}...</div>`;
+      } catch (err) {
+        el.innerHTML = `<p class="label-muted">Scheduled outages unavailable - check ESP_API_KEY / backend.</p>`;
+      }
+    }
+
+    async function loadManual() {
+      const el = document.getElementById("manual-list");
+      try {
+        const outages = await Api.getManualOutages();
+        el.innerHTML = outages.map(o => `
+          <div class="card" style="font-size:13px;">started ${o.startedAt} ${o.restoredAt ? "· restored " + o.restoredAt : "· ongoing"}</div>
+        `).join("") || `<p class="label-muted">No outages reported yet.</p>`;
+      } catch (err) {
+        el.innerHTML = `<p class="label-muted">Could not load - is the backend running?</p>`;
+      }
+    }
+
+    document.getElementById("report-btn").addEventListener("click", async () => {
+      try {
+        await Api.reportOutage();
+        loadManual();
+      } catch (err) {
+        alert("Could not report - is the backend running?");
+      }
+    });
+
+    loadScheduled();
+    loadManual();
+  </script>
+</body>
+</html>

@@ -1,0 +1,95 @@
+:root {
+  --maroon: #3D0F14;
+  --burgundy: #7B2D3E;
+  --tan: #C99B7A;
+  --cream: #F3E9D8;
+  --white: #FFFFFF;
+  --text-muted: #8A7860;
+  --radius: 8px;
+}
+
+/* TODO: dark theme variant. When you get to it, don't just invert these -
+   see the note in chat about desaturating rather than flipping to black. */
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  font-family: system-ui, -apple-system, sans-serif;
+  background: var(--cream);
+  color: var(--maroon);
+}
+
+.page {
+  max-width: 420px;
+  margin: 0 auto;
+  padding: 20px 16px 80px;
+}
+
+.card {
+  background: var(--white);
+  border-radius: var(--radius);
+  padding: 12px 14px;
+  margin-bottom: 8px;
+}
+
+.card-accent {
+  background: var(--burgundy);
+  color: var(--cream);
+  border-radius: var(--radius);
+  padding: 12px 14px;
+  margin-bottom: 8px;
+}
+
+.btn-primary {
+  background: var(--burgundy);
+  color: var(--cream);
+  border: none;
+  border-radius: var(--radius);
+  padding: 12px;
+  font-size: 14px;
+  font-weight: 600;
+  width: 100%;
+  cursor: pointer;
+}
+
+.btn-primary:active { opacity: 0.85; }
+
+input, select {
+  width: 100%;
+  padding: 10px 12px;
+  border: none;
+  border-radius: var(--radius);
+  background: var(--white);
+  margin-bottom: 8px;
+  font-size: 14px;
+}
+
+.label-muted {
+  font-size: 12px;
+  color: var(--text-muted);
+  margin: 0 0 4px;
+}
+
+.priority-essential { color: var(--burgundy); }
+.priority-important { color: #9C7A4E; }
+.priority-optional { color: var(--text-muted); }
+
+nav.bottom-nav {
+  position: sticky;
+  bottom: 0;
+  display: flex;
+  justify-content: space-around;
+  background: var(--white);
+  padding: 10px 0;
+  border-top: 1px solid #eee1cc;
+}
+
+nav.bottom-nav a {
+  color: var(--text-muted);
+  text-decoration: none;
+  font-size: 11px;
+  text-align: center;
+}
+
+nav.bottom-nav a.active { color: var(--burgundy); font-weight: 600; }

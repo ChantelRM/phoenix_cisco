@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>KiloWhat - Purchases</title>
+  <link rel="manifest" href="manifest.json">
+  <link rel="stylesheet" href="css/theme.css">
+</head>
+<body>
+  <div class="page">
+    <h1 style="font-size:18px;">Electricity purchases</h1>
+
+    <form id="add-form">
+      <p class="label-muted">Amount paid (R)</p>
+      <input type="number" step="0.01" id="p-amount" required>
+      <p class="label-muted">Units received (kWh)</p>
+      <input type="number" step="0.01" id="p-units" required>
+      <p class="label-muted">Date</p>
+      <input type="date" id="p-date" required>
+      <button type="submit" class="btn-primary">Save</button>
+    </form>
+
+    <div id="purchase-list" style="margin-top:16px;"></div>
+  </div>
+
+  <nav class="bottom-nav">
+    <a href="dashboard.html">Home</a>
+    <a href="purchases.html" class="active">Purchases</a>
+    <a href="outages.html">Outages</a>
+  </nav>
+
+  <script src="js/api.js"></script>
+  <script src="js/popup.js"></script>
+  <script>
+    async function loadPurchases() {
+      const list = document.getElementById("purchase-list");
+      try {
+        const purchases = await Api.getPurchases();
+        list.innerHTML = purchases.map(p => `
+          <div class="card" style="display:flex; justify-content:space-between; font-size:13px;">
+            <span>${p.date}</span><span>R${p.amountRand} · ${p.unitsKwh} kWh</span>
+          </div>`).join("") || `<p class="label-muted">No purchases yet.</p>`;
+      } catch (err) {
+        list.innerHTML = `<p class="label-muted">Could not load - is the backend running?</p>`;
+      }
+    }
+
+    document.getElementById("add-form").addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const amount = parseFloat(document.getElementById("p-amount").value);
+      const units = parseFloat(document.getElementById("p-units").value);
+      const date = document.getElementById("p-date").value;
+      try {
+        await Api.recordPurchase(amount, units, date);
+        e.target.reset();
+        loadPurchases();
+        checkNotifications();
+      } catch (err) {
+        alert("Could not save - is the backend running?");
+      }
+    });
+
+    loadPurchases();
+    startNotificationPolling();
+  </script>
+</body>
+</html>

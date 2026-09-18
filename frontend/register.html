@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>KiloWhat - Register</title>
+  <link rel="manifest" href="manifest.json">
+  <link rel="stylesheet" href="css/theme.css">
+  <style>
+    .stepper { display:flex; align-items:center; justify-content:space-between; background:var(--white); border-radius:var(--radius); padding:9px 12px; margin-bottom:8px; }
+    .stepper button { border:none; background:var(--burgundy); color:var(--cream); width:26px; height:26px; border-radius:6px; font-size:16px; }
+  </style>
+</head>
+<body>
+  <div class="page">
+    <h1 style="font-size:20px;">Create your account</h1>
+
+    <form id="register-form">
+      <p class="label-muted">Username</p>
+      <input type="text" id="username" required>
+
+      <p class="label-muted">Area (municipality / suburb)</p>
+      <input type="text" id="area" required>
+      <!-- TODO once ESP area search is wired: replace with an autocomplete
+           that stores the real ESP area id here, not free text -->
+
+      <p class="label-muted">People in household</p>
+      <input type="number" id="household-size" min="1" value="1" required>
+
+      <p class="label-muted" style="margin-top:12px;">How many appliances do you have, per category?</p>
+      <div class="stepper">
+        <span>Kitchen</span>
+        <span>
+          <button type="button" onclick="changeCount('KITCHEN', -1)">-</button>
+          <span id="count-KITCHEN">0</span>
+          <button type="button" onclick="changeCount('KITCHEN', 1)">+</button>
+        </span>
+      </div>
+      <div class="stepper">
+        <span>Entertainment</span>
+        <span>
+          <button type="button" onclick="changeCount('ENTERTAINMENT', -1)">-</button>
+          <span id="count-ENTERTAINMENT">0</span>
+          <button type="button" onclick="changeCount('ENTERTAINMENT', 1)">+</button>
+        </span>
+      </div>
+      <div class="stepper">
+        <span>Heating / cooling</span>
+        <span>
+          <button type="button" onclick="changeCount('HEATING_COOLING', -1)">-</button>
+          <span id="count-HEATING_COOLING">0</span>
+          <button type="button" onclick="changeCount('HEATING_COOLING', 1)">+</button>
+        </span>
+      </div>
+      <div class="stepper">
+        <span>Lighting</span>
+        <span>
+          <button type="button" onclick="changeCount('LIGHTING', -1)">-</button>
+          <span id="count-LIGHTING">0</span>
+          <button type="button" onclick="changeCount('LIGHTING', 1)">+</button>
+        </span>
+      </div>
+      <div class="stepper">
+        <span>Other</span>
+        <span>
+          <button type="button" onclick="changeCount('OTHER', -1)">-</button>
+          <span id="count-OTHER">0</span>
+          <button type="button" onclick="changeCount('OTHER', 1)">+</button>
+        </span>
+      </div>
+
+      <button type="submit" class="btn-primary" style="margin-top:12px;">Create account</button>
+    </form>
+    <p id="error" style="color:var(--burgundy); font-size:12px; text-align:center;"></p>
+  </div>
+
+  <script src="js/api.js"></script>
+  <script>
+    const counts = { KITCHEN: 0, ENTERTAINMENT: 0, HEATING_COOLING: 0, LIGHTING: 0, OTHER: 0 };
+
+    function changeCount(category, delta) {
+      counts[category] = Math.max(0, counts[category] + delta);
+      document.getElementById(`count-${category}`).textContent = counts[category];
+    }
+
+    document.getElementById("register-form").addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const applianceCategories = Object.entries(counts)
+        .filter(([, count]) => count > 0)
+        .map(([category, count]) => ({ category, count }));
+
+      const payload = {
+        username: document.getElementById("username").value,
+        areaId: document.getElementById("area").value,
+        householdSize: parseInt(document.getElementById("household-size").value, 10),
+        applianceCategories
+      };
+
+      try {
+        const user = await Api.register(payload);
+        localStorage.setItem("kw-user-id", user.id);
+        window.location.href = "dashboard.html";
+      } catch (err) {
+        document.getElementById("error").textContent = "Could not register - username may already be taken.";
+      }
+    });
+  </script>
+</body>
+</html>
